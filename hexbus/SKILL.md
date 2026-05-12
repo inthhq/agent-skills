@@ -5,13 +5,15 @@ description: Use when creating, improving, or reviewing high-quality CLIs with h
 
 # Hexbus
 
-Use this skill to create good CLIs with `hexbus`, the opinionated TypeScript ESM CLI framework in `packages/hexbus`.
+Use this skill to create good CLIs with `hexbus`, the opinionated TypeScript ESM CLI framework from https://github.com/inthhq/hexbus.
 
 ## Start Here
 
-- Read `packages/hexbus/README.md` for public API intent before changing behavior.
-- Use `examples/minimal-cli/src/index.ts` as the canonical runnable consumer pattern.
-- Check `packages/hexbus/src/index.ts` for current exports instead of assuming an API exists.
+- Do not assume the upstream `hexbus` monorepo exists in the user's workspace.
+- For public API intent, use the package docs if installed, or read https://github.com/inthhq/hexbus/blob/main/packages/hexbus/README.md.
+- Use https://github.com/inthhq/hexbus/blob/main/examples/minimal-cli/src/index.ts as the canonical runnable consumer pattern.
+- Check https://github.com/inthhq/hexbus/blob/main/packages/hexbus/src/index.ts for current exports instead of assuming an API exists.
+- When editing this skill repo itself, a vendored snapshot may exist at `inrepo_modules/hexbus`; treat GitHub as the portable source for agents that only receive the skill.
 - Keep `hexbus` and `@inth/hexbus-*` packages free of product-specific imports and copy.
 
 ## Consumer Pattern
@@ -63,11 +65,12 @@ Extend `CliContext<TPackage>` when a product CLI injects app-specific services, 
 
 ## Editing Hexbus
 
-- Keep public exports centralized in `packages/hexbus/src/index.ts`.
+- If the user's workspace is a checkout of https://github.com/inthhq/hexbus, edit local files there. Otherwise, explain the relevant GitHub paths and provide patches or guidance against the upstream source.
+- Keep public exports centralized in `packages/hexbus/src/index.ts` in the upstream repo.
 - Add or update focused Vitest coverage when changing parser, context, detection, errors, telemetry, color, or update behavior.
 - Preserve the framework-style boundary: shared CLI primitives belong in `hexbus`; product decisions belong in consuming packages.
 - Prefer small explicit APIs over broad abstractions.
-- Update `packages/hexbus/readie.json` when README-facing docs change, then regenerate docs with the repo script.
+- Update `packages/hexbus/readie.json` in the upstream repo when README-facing docs change, then regenerate docs with the repo script.
 
 ## Bundled Resources
 
@@ -77,7 +80,7 @@ Extend `CliContext<TPackage>` when a product CLI injects app-specific services, 
 
 ## Commands
 
-Use Bun from the repo root:
+When working in an upstream `hexbus` checkout, use Bun from that repo root:
 
 - `bun run test --filter=hexbus`
 - `bun run check-types --filter=hexbus`

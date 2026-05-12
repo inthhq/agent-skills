@@ -1,6 +1,6 @@
 # Testing Hexbus CLIs
 
-Use this when adding tests for a `hexbus` CLI or for `packages/hexbus`.
+Use this when adding tests for a `hexbus` CLI or for the upstream `hexbus` package at https://github.com/inthhq/hexbus/tree/main/packages/hexbus.
 
 ## Test Strategy
 
@@ -67,7 +67,7 @@ Only add process-level tests when they protect startup behavior:
 
 ## Repo Commands
 
-From the repo root:
+When working in an upstream `hexbus` checkout, run from that repo root:
 
 - `bun run test --filter=hexbus`
 - `bun run check-types --filter=hexbus`

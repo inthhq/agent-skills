@@ -13,17 +13,17 @@ Use this when designing or reviewing a CLI built with `hexbus`.
 ## Invocation Lifecycle
 
 1. Read `process.argv.slice(2)` once.
-2. Handle `-v` / `--version` before full context creation.
-3. Create one `CliContext` with `createCliContext`.
-4. Start background update checks only after context creation.
-5. Show help before running command side effects.
-6. Display an intro for interactive or multi-step commands.
-7. Execute the command and let shared error handling render failures.
+2. Prefer `runCli` to own version handling, context creation, update checks, help, intro, dispatch, telemetry shutdown, and errors.
+3. Use `hooks.afterContext` to add product services after base context creation.
+4. Show help before running command side effects.
+5. Display an intro for interactive or multi-step commands.
+6. Execute the command and let shared error handling render failures.
 
 ## Flags And Prompts
 
 - Use built-in global flags unless the product needs command-specific parsing.
 - Treat `--help`, `--version`, `--logger`, `--color`, `--config`, `--yes`, `--no-telemetry`, `--telemetry-debug`, and `--force` as reserved global behavior.
+- Parse command-local flags and positionals with `parseCommandArgs(context.commandArgs, spec)`.
 - Make destructive operations require confirmation unless `--yes` or `--force` clearly applies.
 - Keep prompts skippable in CI or scripted use.
 - Validate positional arguments before prompting.
@@ -33,6 +33,7 @@ Use this when designing or reviewing a CLI built with `hexbus`.
 - Use `context.logger` for all user-facing output.
 - Use `logger.step()` for multi-step workflows with meaningful step names.
 - Use `withSpinner` or `createSpinner` for slow operations where progress is otherwise invisible.
+- Use Hexbus prompt helpers instead of importing `@clack/prompts` directly.
 - Print next actions after successful setup commands.
 - Prefer concise success output over dumping implementation details.
 - Keep debug details behind `--logger debug`.
@@ -59,3 +60,4 @@ Use this when designing or reviewing a CLI built with `hexbus`.
 - Telemetry should be best-effort and never required for command success.
 - Version and help output should be fast.
 - Unknown commands should render help, not run a default mutating command.
+- Command trees should use `subcommands`; avoid manual nested command switches unless preserving a legacy flow during migration.

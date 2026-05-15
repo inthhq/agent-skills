@@ -1,27 +1,30 @@
 #!/usr/bin/env bun
+// @ts-nocheck -- Bundled skill example; copy into a CLI package with hexbus installed.
 
 import { readFileSync } from "node:fs";
 
 import {
   CliError,
-  createCliContext,
-  createCliLogger,
-  displayIntro,
   extendErrorCatalog,
-  globalFlags,
-  isVersionRequest,
-  printVersionInfo,
-  showHelpMenu,
-  startBackgroundUpdateCheck,
-  withErrorHandling,
+  parseCommandArgs,
+  runCli,
   withSpinner,
 } from "hexbus";
-import type { CliCommand, CliContext } from "hexbus";
+import type {
+  CliCommand as HexbusCliCommand,
+  CliContext as HexbusCliContext,
+  PackageInfo,
+} from "hexbus";
 
-interface PackageInfo {
-  name: string;
-  version: string;
+type AvailablePackages = "my-cli" | "@acme/react" | "@acme/next";
+
+interface CliContext extends HexbusCliContext<AvailablePackages> {
+  framework: HexbusCliContext<AvailablePackages>["framework"] & {
+    pkg: AvailablePackages;
+  };
 }
+
+type CliCommand = HexbusCliCommand<CliContext>;
 
 extendErrorCatalog({
   CONFIG_EXISTS: {
@@ -41,6 +44,18 @@ function readOwnPackageInfo(): PackageInfo {
   return {
     name: typeof parsed.name === "string" ? parsed.name : "my-cli",
     version: typeof parsed.version === "string" ? parsed.version : "unknown",
+  };
+}
+
+async function createProductContext(
+  context: HexbusCliContext<AvailablePackages>
+): Promise<CliContext> {
+  return {
+    ...context,
+    framework: {
+      ...context.framework,
+      pkg: context.framework.pkg ?? "my-cli",
+    },
   };
 }
 
@@ -83,7 +98,28 @@ async function initCommand(context: CliContext): Promise<void> {
 }
 
 async function doctorCommand(context: CliContext): Promise<void> {
+  const parsed = parseCommandArgs(context.commandArgs, {
+    flags: {
+      json: { defaultValue: false, names: ["--json"], type: "boolean" },
+    },
+  });
   const packageInfo = context.fs.getPackageInfo();
+
+  if (parsed.flags.json) {
+    context.logger.message(
+      JSON.stringify(
+        {
+          framework: context.framework.framework,
+          packageManager: context.packageManager.name,
+          project: packageInfo.name,
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
   context.logger.info(`Project: ${packageInfo.name}`);
   context.logger.info(`Package manager: ${context.packageManager.name}`);
 
@@ -112,62 +148,33 @@ const commands: CliCommand[] = [
 ];
 
 async function main(): Promise<void> {
-  const rawArgs = process.argv.slice(2);
   const packageInfo = readOwnPackageInfo();
 
-  if (isVersionRequest(rawArgs)) {
-    await printVersionInfo({
-      appName: "my-cli",
-      currentVersion: packageInfo.version,
-      packageName: packageInfo.name,
-    });
-    process.exit(0);
-  }
-
-  const context = await createCliContext({
+  await runCli<AvailablePackages, CliContext>({
     appName: "my-cli",
     commands,
-    configName: "my-cli",
-    rawArgs,
+    context: {
+      configName: "my-cli",
+      packageMap: {
+        core: "my-cli",
+        next: "@acme/next",
+        react: "@acme/react",
+      },
+    },
+    hooks: {
+      afterContext: createProductContext,
+      beforeCommand: ({ commandNames, context }) => {
+        context.logger.debug(`Executing command: ${commandNames.join(" ")}`);
+      },
+    },
+    intro: {
+      tagline: "Project automation for my product.",
+    },
+    noCommand: {
+      mode: "interactive",
+    },
+    packageInfo,
   });
-
-  startBackgroundUpdateCheck({
-    appName: "my-cli",
-    currentVersion: packageInfo.version,
-    logger: context.logger,
-    packageName: packageInfo.name,
-  });
-
-  if (context.flags.help) {
-    showHelpMenu(
-      context,
-      { appName: "my-cli", version: packageInfo.version },
-      commands,
-      globalFlags
-    );
-    process.exit(0);
-  }
-
-  await displayIntro(context, {
-    appName: "my-cli",
-    tagline: "Project automation for my product.",
-    version: packageInfo.version,
-  });
-
-  const command = commands.find((item) => item.name === context.commandName);
-
-  if (!command) {
-    showHelpMenu(
-      context,
-      { appName: "my-cli", version: packageInfo.version },
-      commands,
-      globalFlags
-    );
-    process.exit(1);
-  }
-
-  await command.action(context);
 }
 
-const startupLogger = createCliLogger("error");
-await withErrorHandling(main, startupLogger, { command: "startup" })();
+await main();

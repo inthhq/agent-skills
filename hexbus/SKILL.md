@@ -1,44 +1,43 @@
 ---
 name: hexbus
-description: Use when creating, improving, or reviewing high-quality CLIs with hexbus, including command design, argument parsing, CliContext services, help/version output, telemetry, errors, spinners, testing, and package manager/framework detection.
+description: Use when creating, migrating, improving, or reviewing TypeScript CLIs with hexbus, including runCli setup, command trees, command-local args, CliContext extension, prompts, help/version output, telemetry, errors, spinners, tests, and moving existing Clack/manual parsers to Hexbus.
 ---
 
 # Hexbus
 
-Use this skill to create good CLIs with `hexbus`, the opinionated TypeScript ESM CLI framework from https://github.com/inthhq/hexbus.
+Use this skill to create or migrate good CLIs with `hexbus`, the opinionated TypeScript ESM CLI framework from https://github.com/inthhq/hexbus.
 
 ## Start Here
 
 - Do not assume the upstream `hexbus` monorepo exists in the user's workspace.
-- For public API intent, use the package docs if installed, or read https://github.com/inthhq/hexbus/blob/main/packages/hexbus/README.md.
-- Use https://github.com/inthhq/hexbus/blob/main/examples/minimal-cli/src/index.ts as the canonical runnable consumer pattern.
-- Check https://github.com/inthhq/hexbus/blob/main/packages/hexbus/src/index.ts for current exports instead of assuming an API exists.
+- For public API intent, use installed package docs or read https://github.com/inthhq/hexbus/blob/main/packages/hexbus/README.md.
+- Check `packages/hexbus/src/index.ts` or the installed `.d.ts` exports before assuming an API exists.
+- Prefer `runCli` for new product CLIs. Use lower-level `createCliContext`, `dispatchCommand`, and `showHelpMenu` only when the entrypoint needs bespoke lifecycle control.
 - When editing this skill repo itself, a vendored snapshot may exist at `inrepo_modules/hexbus`; treat GitHub as the portable source for agents that only receive the skill.
 - Keep `hexbus` and `@inth/hexbus-*` packages free of product-specific imports and copy.
 
-## Consumer Pattern
+## Choose A Path
 
-Build CLIs around a small command table and one resolved context:
+- **New CLI**: load `references/new-cli-playbook.md`, then `examples/cli-entrypoint.ts`.
+- **Migrating an existing CLI**: load `references/migration-playbook.md`; also load the old entrypoint and current e2e tests.
+- **Setup/API confusion**: load `references/setup-and-api.md`.
+- **UX/design review**: load `references/good-cli-checklist.md`.
+- **Tests**: load `references/testing-hexbus-clis.md`.
+
+## Default Consumer Pattern
+
+Build product CLIs around a data-first command table and `runCli`:
 
 ```ts
-import {
-  createCliContext,
-  displayIntro,
-  globalFlags,
-  isVersionRequest,
-  printVersionInfo,
-  showHelpMenu,
-  startBackgroundUpdateCheck,
-} from "hexbus";
-import type { CliCommand } from "hexbus";
+import { runCli, type CliCommand } from "hexbus";
 ```
 
 1. Define `CliCommand[]` with stable `name`, `label`, `hint`, `description`, and an async `action(context)`.
-2. Handle `-v` / `--version` early with `isVersionRequest` and `printVersionInfo`.
-3. Call `createCliContext({ rawArgs, commands, appName, configName })` once.
-4. Start update checks with `startBackgroundUpdateCheck` during normal command execution.
-5. Render `--help` with `showHelpMenu(context, appInfo, commands, globalFlags)`.
-6. Route to the matched command via `context.commandName`; show help for unknown commands.
+2. Pass `appName`, `commands`, `packageInfo`, `context.configName`, `intro`, `help`, and `noCommand` to `runCli`.
+3. Put product-specific context augmentation in `hooks.afterContext`, returning an extended context type.
+4. Put lifecycle logging/telemetry in `hooks.beforeCommand`, `afterCommand`, and `onError`.
+5. Use `subcommands` for command trees; `runCli` dispatches to the deepest matching action and rewrites `context.commandArgs` to the remaining args.
+6. Use `parseCommandArgs(context.commandArgs, spec)` inside command actions for command-local flags and positionals.
 
 ## Context Services
 
@@ -53,15 +52,25 @@ Prefer existing `CliContext` services over ad hoc utilities:
 - `context.telemetry` for best-effort lifecycle and command events.
 - `context.error` for normalized cancellation and error exits.
 
-Extend `CliContext<TPackage>` when a product CLI injects app-specific services, but keep command implementations typed against the smallest context they need.
+Extend `CliContext<TPackage>` when a product CLI injects app-specific services, but keep command implementations typed against the smallest context they need. A common pattern is `type ProductCommand = CliCommand<ProductContext>` plus `runCli<AvailablePackages, ProductContext>({ hooks: { afterContext } })`.
 
 ## Errors And UX
 
 - Throw `CliError` for expected user-facing failures.
 - Use `extendErrorCatalog` for product-specific error codes.
-- Wrap top-level execution with `withErrorHandling` or use `context.error.handleError` for consistent rendering and telemetry.
-- Use `displayIntro`, `createCliLogger`, `createSpinner`, `withSpinner`, and `showHelpMenu` for terminal UX.
+- Let `runCli` own top-level error rendering when possible; use `withErrorHandling` only in custom lifecycle entrypoints.
+- Use Hexbus prompt helpers (`promptSelect`, `promptMultiselect`, `promptText`, `promptConfirm`, `context.confirm`) instead of importing `@clack/prompts` directly.
+- Use `displayIntro`, `createSpinner`, `withSpinner`, `color`, `renderFiglet`, and `showHelpMenu` for terminal UX.
 - Do not print raw stack traces for expected CLI failures.
+
+## Migration Rules
+
+- Preserve existing observable behavior first: help text, exit codes, stderr/stdout split, no-arg behavior, env vars, interactive cancellation, and e2e tests.
+- Replace manual top-level parsing with `runCli` only after creating a command table matching the old behavior.
+- Replace command-specific parsers with `parseCommandArgs`; avoid treating product-local flags as global flags unless they truly apply to every command.
+- Replace direct Clack prompts with Hexbus prompt helpers so prompt UX, cancellation, and telemetry stay consistent.
+- Keep domain logic in plain functions. Command actions should parse args, call services, and render results.
+- If a CLI has special no-argument behavior, use `noCommand: { mode: "custom", action }` or `mode: "interactive"` instead of hand-rolled dispatch.
 
 ## Editing Hexbus
 
@@ -74,6 +83,9 @@ Extend `CliContext<TPackage>` when a product CLI injects app-specific services, 
 
 ## Bundled Resources
 
+- Load `references/new-cli-playbook.md` when scaffolding a CLI or new command family.
+- Load `references/migration-playbook.md` when converting an existing CLI to Hexbus.
+- Load `references/setup-and-api.md` when wiring package setup, context extension, global flags, command trees, prompts, telemetry, or update checks.
 - Load `references/good-cli-checklist.md` when designing, reviewing, or improving CLI UX.
 - Load `references/testing-hexbus-clis.md` when adding tests or planning coverage.
 - Load `examples/cli-entrypoint.ts` when scaffolding a new production-style CLI entrypoint.

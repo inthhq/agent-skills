@@ -12,6 +12,10 @@ Comprehensive TSDoc and JSDoc authoring skill for TypeScript and JavaScript code
 
 Guidance for creating, improving, and reviewing high-quality CLIs with `hexbus`, including command design, argument parsing, CLI context services, help/version output, telemetry, errors, spinners, testing, and package manager/framework detection.
 
+### [`ecmascript-modernization`](./ecmascript-modernization)
+
+Guidance for modernizing JavaScript and TypeScript code to ECMAScript 2016 through 2025 APIs, with "use this now, not that" replacements, codebase audit workflows, tests, and TypeScript `target`/`lib` config guidance.
+
 ## Installation
 
 ```bash
@@ -28,6 +32,13 @@ Skills are automatically activated when relevant tasks are detected. Example pro
 - "Review these docs and fix missing @param/@returns tags."
 - "Build a new TypeScript CLI with hexbus."
 - "Review this hexbus command implementation for UX and testing gaps."
+- "Modernize these helpers to newer ECMAScript APIs."
+- "Audit this codebase for newer ECMAScript improvements."
+- "Show the ES2023 replacement for this immutable array update."
+- "Show the ES2025 replacement for this custom Set utility."
+- "Update this TypeScript project to use ES2025 APIs safely."
+- "Modernize this grouping helper to ES2024."
+- "Replace this deferred promise helper with Promise.withResolvers."
 
 ## Skill Structure
 
@@ -38,6 +49,8 @@ Skills are automatically activated when relevant tasks are detected. Example pro
 - `hexbus/SKILL.md`: Main skill behavior, triggers, and workflow.
 - `hexbus/examples/cli-entrypoint.ts`: Production-style CLI entrypoint example.
 - `hexbus/references/**`: Focused CLI UX and testing references.
+- `ecmascript-modernization/SKILL.md`: Main ES2016-ES2025 modernization router and tsconfig guidance.
+- `ecmascript-modernization/references/**`: Focused edition guides with feature-by-feature replacements.
 
 ## Validation
 
@@ -48,7 +61,7 @@ npm run validate
 This runs:
 
 ```bash
-bunx skills-ref validate ./tsdoc-jsdoc-authoring && bunx skills-ref validate ./hexbus
+bunx skills-ref validate ./tsdoc-jsdoc-authoring && bunx skills-ref validate ./hexbus && bunx skills-ref validate ./ecmascript-modernization
 ```
 
 ## Prerequisites

@@ -2,6 +2,6 @@
     "name": "inth-skill",
     "private": true,
     "scripts": {
-      "validate": "bunx skills-ref validate ./tsdoc-jsdoc-authoring && bunx skills-ref validate ./hexbus"
+      "validate": "bunx skills-ref validate ./tsdoc-jsdoc-authoring && bunx skills-ref validate ./hexbus && bunx skills-ref validate ./ecmascript-modernization"
     }
   }

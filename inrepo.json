@@ -2,6 +2,9 @@
   "packages": [
     {
       "name": "hexbus"
+    },
+    {
+      "name": "ecmascript-modernization"
     }
   ],
   "$schema": "https://raw.githubusercontent.com/inthhq/inrepo/main/inrepo.schema.json"
